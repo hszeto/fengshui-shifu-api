@@ -1,4 +1,4 @@
-# ⛩️ FengShui-Shifu API (`fengshui-shifu-api`)
+# ☯️ FengShui-Shifu API (`fengshui-shifu-api`)
 
 Ruby on Rails 8 API backend for **FengShui-Shifu (风水师傅)** — AI Spatial Feng Shui & BaZi Fortune Telling Platform.
 

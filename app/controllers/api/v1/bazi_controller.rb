@@ -4,6 +4,8 @@ module Api
   module V1
     # Handles BaZi (Four Pillars of Destiny) calculation endpoints.
     class BaziController < ApplicationController
+      wrap_parameters false
+
       def calculate
         if params[:birth_date].blank?
           render json: { error: 'birth_date parameter is required (Format: YYYY-MM-DD)' }, status: :bad_request

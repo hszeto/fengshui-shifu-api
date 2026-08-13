@@ -2,6 +2,7 @@
 
 module Api
   module V1
+    # Handles health check requests
     class HealthController < ApplicationController
       def show
         render json: {

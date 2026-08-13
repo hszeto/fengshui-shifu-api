@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Service for calculating BaZi (Four Pillars) day master, branch, and Feng Shui Kua number.
 class BaziCalculatorService
   STEMS = [
     { en: 'Jia Wood', zh: '甲木', element: 'Wood', polarity: 'Yang' },
@@ -51,69 +52,60 @@ class BaziCalculatorService
     day_branch = BRANCHES[day_branch_idx]
     kua_num = calculate_kua_number
 
+    build_calculation_result(day_master, day_branch, kua_num)
+  end
+
+  private
+
+  def build_calculation_result(day_master, day_branch, kua_num)
     {
       birth_date: @date.to_s,
       gender: @gender,
-      day_master: {
-        name: day_master[:en],
-        chinese: day_master[:zh],
-        element: day_master[:element],
-        polarity: day_master[:polarity]
-      },
-      day_branch: {
-        name: day_branch[:en],
-        chinese: day_branch[:zh],
-        animal: day_branch[:animal]
-      },
+      day_master: format_day_master(day_master),
+      day_branch: format_day_branch(day_branch),
       kua_number: kua_num,
       kua_profile: KUA_DIRECTIONS[kua_num],
       today_luck_teaser: generate_luck_teaser(day_master[:element])
     }
   end
 
-  private
+  def format_day_master(day_master)
+    {
+      name: day_master[:en],
+      chinese: day_master[:zh],
+      element: day_master[:element],
+      polarity: day_master[:polarity]
+    }
+  end
+
+  def format_day_branch(day_branch)
+    {
+      name: day_branch[:en],
+      chinese: day_branch[:zh],
+      animal: day_branch[:animal]
+    }
+  end
 
   def calculate_day_pillar
-    y = @date.year
-    m = @date.month
-    d = @date.day
-
-    if m <= 2
-      y -= 1
-      m += 12
-    end
-
-    a = y / 100
-    b = 2 - a + (a / 4)
-    jdn = (365.25 * (y + 4716)).floor + (30.6001 * (m + 1)).floor + d + b - 1524.5
-
-    day_index = ((jdn + 0.5 + 49) % 60).to_i
+    day_index = (@date.jd + 5) % 60
     [day_index % 10, day_index % 12]
   end
 
   def calculate_kua_number
     year_sum = sum_digits(@date.year)
+    @gender == 'male' ? calculate_male_kua(year_sum) : calculate_female_kua(year_sum)
+  end
 
-    if @date.year < 2000
-      if @gender == 'male'
-        kua = 10 - year_sum
-        kua = 2 if kua == 5
-      else
-        kua = year_sum + 5
-        kua = sum_digits(kua) if kua > 9
-        kua = 8 if kua == 5
-      end
-    else
-      if @gender == 'male'
-        kua = 9 - year_sum
-        kua = 2 if kua == 5
-      else
-        kua = year_sum + 6
-        kua = sum_digits(kua) if kua > 9
-        kua = 8 if kua == 5
-      end
-    end
-    kua
+  def calculate_male_kua(year_sum)
+    base = @date.year < 2000 ? 8 : 9
+    kua = base - year_sum
+    kua == 5 ? 2 : kua
+  end
+
+  def calculate_female_kua(year_sum)
+    offset = @date.year < 2000 ? 5 : 6
+    kua = sum_digits(year_sum + offset)
+    kua == 5 ? 8 : kua
   end
 
   def sum_digits(number)

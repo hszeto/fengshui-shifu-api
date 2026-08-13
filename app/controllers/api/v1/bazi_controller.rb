@@ -2,6 +2,7 @@
 
 module Api
   module V1
+    # Handles BaZi (Four Pillars of Destiny) calculation endpoints.
     class BaziController < ApplicationController
       def calculate
         birth_date = params[:birth_date]

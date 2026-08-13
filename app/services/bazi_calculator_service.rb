@@ -1,49 +1,13 @@
 # frozen_string_literal: true
 
-# Service for calculating BaZi (Four Pillars) day master, branch, and Feng Shui Kua number.
+# Service for calculating BaZi (Four Pillars) day master, branch, optional hour branch, and Feng Shui Kua number.
 class BaziCalculatorService
-  STEMS = [
-    { en: 'Jia Wood', zh: '甲木', element: 'Wood', polarity: 'Yang' },
-    { en: 'Yi Wood', zh: '乙木', element: 'Wood', polarity: 'Yin' },
-    { en: 'Bing Fire', zh: '丙火', element: 'Fire', polarity: 'Yang' },
-    { en: 'Ding Fire', zh: '丁火', element: 'Fire', polarity: 'Yin' },
-    { en: 'Wu Earth', zh: '戊土', element: 'Earth', polarity: 'Yang' },
-    { en: 'Ji Earth', zh: '己土', element: 'Earth', polarity: 'Yin' },
-    { en: 'Geng Metal', zh: '庚金', element: 'Metal', polarity: 'Yang' },
-    { en: 'Xin Metal', zh: '辛金', element: 'Metal', polarity: 'Yin' },
-    { en: 'Ren Water', zh: '壬水', element: 'Water', polarity: 'Yang' },
-    { en: 'Gui Water', zh: '癸水', element: 'Water', polarity: 'Yin' }
-  ].freeze
+  include Constants
 
-  BRANCHES = [
-    { en: 'Zi Rat', zh: '子鼠', animal: 'Rat', element: 'Water' },
-    { en: 'Chou Ox', zh: '丑牛', animal: 'Ox', element: 'Earth' },
-    { en: 'Yin Tiger', zh: '寅虎', animal: 'Tiger', element: 'Wood' },
-    { en: 'Mao Rabbit', zh: '卯兔', animal: 'Rabbit', element: 'Wood' },
-    { en: 'Chen Dragon', zh: '辰龙', animal: 'Dragon', element: 'Earth' },
-    { en: 'Si Snake', zh: '巳蛇', animal: 'Snake', element: 'Fire' },
-    { en: 'Wu Horse', zh: '午马', animal: 'Horse', element: 'Fire' },
-    { en: 'Wei Goat', zh: '未羊', animal: 'Goat', element: 'Earth' },
-    { en: 'Shen Monkey', zh: '申猴', animal: 'Monkey', element: 'Metal' },
-    { en: 'You Rooster', zh: '酉鸡', animal: 'Rooster', element: 'Metal' },
-    { en: 'Xu Dog', zh: '戌狗', animal: 'Dog', element: 'Earth' },
-    { en: 'Hai Pig', zh: '亥猪', animal: 'Pig', element: 'Water' }
-  ].freeze
-
-  KUA_DIRECTIONS = {
-    1 => { group: 'East', sheng_qi: 'SE', tian_yi: 'E', yan_nian: 'S', fu_wei: 'N' },
-    2 => { group: 'West', sheng_qi: 'NE', tian_yi: 'W', yan_nian: 'NW', fu_wei: 'SW' },
-    3 => { group: 'East', sheng_qi: 'S', tian_yi: 'N', yan_nian: 'SE', fu_wei: 'E' },
-    4 => { group: 'East', sheng_qi: 'N', tian_yi: 'S', yan_nian: 'E', fu_wei: 'SE' },
-    6 => { group: 'West', sheng_qi: 'W', tian_yi: 'NE', yan_nian: 'SW', fu_wei: 'NW' },
-    7 => { group: 'West', sheng_qi: 'NW', tian_yi: 'SW', yan_nian: 'NE', fu_wei: 'W' },
-    8 => { group: 'West', sheng_qi: 'SW', tian_yi: 'NW', yan_nian: 'W', fu_wei: 'NE' },
-    9 => { group: 'East', sheng_qi: 'E', tian_yi: 'SE', yan_nian: 'N', fu_wei: 'S' }
-  }.freeze
-
-  def initialize(birth_date:, gender: 'male')
+  def initialize(birth_date:, gender: nil, birth_time: nil)
     @date = birth_date.is_a?(String) ? Date.parse(birth_date) : birth_date
-    @gender = gender.to_s.downcase
+    @gender = gender.to_s.strip.presence&.downcase
+    @birth_time = birth_time.to_s.strip.presence
   end
 
   def calculate
@@ -51,16 +15,24 @@ class BaziCalculatorService
     day_master = STEMS[day_stem_idx]
     day_branch = BRANCHES[day_branch_idx]
     kua_num = calculate_kua_number
+    hour_branch = calculate_hour_branch
 
-    build_calculation_result(day_master, day_branch, kua_num)
+    build_calculation_result(day_master, day_branch, kua_num, hour_branch)
   end
 
   private
 
-  def build_calculation_result(day_master, day_branch, kua_num)
+  def build_calculation_result(day_master, day_branch, kua_num, hour_branch)
+    result = base_calculation_result(day_master, day_branch, kua_num)
+    result[:birth_time] = @birth_time if @birth_time.present?
+    result[:hour_branch] = format_day_branch(hour_branch) if hour_branch.present?
+    result
+  end
+
+  def base_calculation_result(day_master, day_branch, kua_num)
     {
       birth_date: @date.to_s,
-      gender: @gender,
+      gender: @gender || 'unspecified',
       day_master: format_day_master(day_master),
       day_branch: format_day_branch(day_branch),
       kua_number: kua_num,
@@ -91,9 +63,24 @@ class BaziCalculatorService
     [day_index % 10, day_index % 12]
   end
 
+  def calculate_hour_branch
+    return nil if @birth_time.blank?
+
+    parts = @birth_time.split(':').map(&:to_i)
+    hour = parts[0] || 0
+    min = parts[1] || 0
+
+    total_minutes = hour * 60 + min
+    shichen_index = ((total_minutes + 60) / 120) % 12
+
+    BRANCHES[shichen_index]
+  end
+
   def calculate_kua_number
+    return nil if @gender.blank? || @gender == 'unspecified'
+
     year_sum = sum_digits(@date.year)
-    @gender == 'male' ? calculate_male_kua(year_sum) : calculate_female_kua(year_sum)
+    @gender == 'female' ? calculate_female_kua(year_sum) : calculate_male_kua(year_sum)
   end
 
   def calculate_male_kua(year_sum)

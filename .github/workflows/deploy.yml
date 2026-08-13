@@ -44,8 +44,8 @@ jobs:
         run: |
           bundle exec rspec
 
-  build:
-    name: Build & Push Docker Image
+  deploy:
+    name: Build Docker & Deploy to AWS ECR + ECS Fargate
     needs: test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -53,6 +53,27 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Build Docker Container
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Log in to AWS ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, Tag & Push Docker Image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: fengshui-shifu-api
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t fengshui-shifu-api .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy to AWS ECS Fargate
+        run: |
+          aws ecs update-service --cluster fengshui-shifu-cluster --service fengshui-shifu-api-service --force-new-deployment --region us-east-1

@@ -79,19 +79,21 @@ class BaziCalculatorService
   def calculate_kua_number
     return nil if @gender.blank? || @gender == 'unspecified'
 
-    year_sum = sum_digits(@date.year)
-    @gender == 'female' ? calculate_female_kua(year_sum) : calculate_male_kua(year_sum)
+    # Astrological Solar Year begins on Lichun (~Feb 4th)
+    astrological_year = (@date.month < 2 || (@date.month == 2 && @date.day < 4)) ? @date.year - 1 : @date.year
+    year_sum = sum_digits(astrological_year)
+    @gender == 'female' ? calculate_female_kua(astrological_year, year_sum) : calculate_male_kua(astrological_year, year_sum)
   end
 
-  def calculate_male_kua(year_sum)
-    base = @date.year < 2000 ? 10 : 9
+  def calculate_male_kua(year, year_sum)
+    base = year < 2000 ? 10 : 9
     kua = base - year_sum
     kua += 9 if kua <= 0
     kua == 5 ? 2 : kua
   end
 
-  def calculate_female_kua(year_sum)
-    offset = @date.year < 2000 ? 5 : 6
+  def calculate_female_kua(year, year_sum)
+    offset = year < 2000 ? 5 : 6
     kua = sum_digits(year_sum + offset)
     kua == 5 ? 8 : kua
   end

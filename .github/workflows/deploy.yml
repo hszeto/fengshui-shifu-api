@@ -76,4 +76,4 @@ jobs:
 
       - name: Deploy to AWS ECS Fargate
         run: |
-          aws ecs update-service --cluster fengshui-shifu-cluster --service fengshui-shifu-api-service --force-new-deployment --region us-east-1
+          aws ecs update-service --cluster fengshui-shifu-cluster --service fengshui-shifu-api-task --force-new-deployment --region us-east-1

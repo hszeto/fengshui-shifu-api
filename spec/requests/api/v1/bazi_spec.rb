@@ -12,7 +12,7 @@ RSpec.describe 'Api::V1::Bazi', type: :request do
         json = JSON.parse(response.body)
         expect(json['success']).to be true
         expect(json['data']['day_master']['name']).to eq('Ren Water')
-        expect(json['data']['kua_number']).to eq(7)
+        expect(json['data']['kua_number']).to eq(9)
       end
 
       it 'returns hour_branch when birth_time parameter is passed' do

@@ -10,8 +10,8 @@ RSpec.describe BaziCalculatorService do
       expect(result[:day_master][:name]).to eq('Ren Water')
       expect(result[:day_master][:chinese]).to eq('壬水')
       expect(result[:day_master][:element]).to eq('Water')
-      expect(result[:kua_number]).to eq(7)
-      expect(result[:kua_profile][:sheng_qi]).to eq('NW')
+      expect(result[:kua_number]).to eq(9)
+      expect(result[:kua_profile][:sheng_qi]).to eq('E')
       expect(result[:birth_time]).to be_nil
       expect(result[:hour_branch]).to be_nil
     end

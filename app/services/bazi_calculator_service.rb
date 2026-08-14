@@ -84,8 +84,9 @@ class BaziCalculatorService
   end
 
   def calculate_male_kua(year_sum)
-    base = @date.year < 2000 ? 8 : 9
+    base = @date.year < 2000 ? 10 : 9
     kua = base - year_sum
+    kua += 9 if kua <= 0
     kua == 5 ? 2 : kua
   end
 
